@@ -18,6 +18,20 @@ from smg.rigging.helpers import CameraPoseConverter
 from smg.utility import GeometryUtil
 
 
+def update_bone_lengths(bone_lengths: Dict[str, List[float]], skeleton: SkeletonDetector.Skeleton) \
+        -> Dict[str, List[float]]:
+    for keypoint1, keypoint2 in skeleton.bones:
+        bone_name: str = str(sorted([keypoint1.name, keypoint2.name]))
+        bone_length: float = np.linalg.norm(keypoint1.position - keypoint2.position)
+        lengths_for_bone: List[float] = bone_lengths.get(bone_name, [])
+        lengths_for_bone.append(bone_length)
+        bone_lengths[bone_name] = lengths_for_bone
+
+    print(bone_lengths)
+
+    return bone_lengths
+
+
 def render_skeleton(skeleton: SkeletonDetector.Skeleton) -> None:
     glEnable(GL_LIGHTING)
     glEnable(GL_LIGHT0)
@@ -67,6 +81,8 @@ def main() -> None:
     params: Dict[str, Any] = {"model_folder": "D:/openpose-1.6.0/models/"}
     with SkeletonDetector(params) as skeleton_detector:
         with OpenNICamera(mirror_images=True) as camera:
+            bone_lengths: Dict[str, List[float]] = {}
+
             while True:
                 # Process any PyGame events.
                 for event in pygame.event.get():
@@ -87,6 +103,9 @@ def main() -> None:
                 skeletons_3d: List[SkeletonDetector.Skeleton] = skeleton_detector.lift_skeletons_to_3d(
                     skeletons_2d, ws_points, mask
                 )
+
+                # for skeleton_3d in skeletons_3d:
+                #     update_bone_lengths(bone_lengths, skeleton_3d)
 
                 depth_image_uc: np.ndarray = np.clip(depth_image * 255 / 5, 0, 255).astype(np.uint8)
                 if output_image is not None:
