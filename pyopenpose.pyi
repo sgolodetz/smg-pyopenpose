@@ -8,6 +8,9 @@ from typing import Any, Dict, List
 # noinspection PyPep8Naming
 def getPoseBodyPartMapping(poseModel: PoseModel) -> Dict[int, str]: ...
 
+# noinspection PyPep8Naming
+def getPosePartPairs(poseModel: PoseModel) -> List[int]: ...
+
 
 # CLASSES
 

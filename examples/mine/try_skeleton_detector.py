@@ -23,6 +23,18 @@ def render_skeleton(skeleton: SkeletonDetector.Skeleton) -> None:
         glColor3f(1.0, 0.0, 0.0)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
         OpenGLUtil.render_sphere(keypoint.position, 0.05, slices=10, stacks=10)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+
+    glColor3f(0.0, 0.0, 1.0)
+    glBegin(GL_LINES)
+    for keypoint1, keypoint2 in skeleton.bones:
+        glVertex3f(*keypoint1.position)
+        glVertex3f(*keypoint2.position)
+        if np.linalg.norm(keypoint1.position) < 0.01:
+            print(keypoint1.name)
+        if np.linalg.norm(keypoint2.position) < 0.01:
+            print(keypoint2.name)
+    glEnd()
 
 
 def main() -> None:
@@ -55,19 +67,26 @@ def main() -> None:
                         return
 
                 colour_image, depth_image = camera.get_images()
-                skeletons_2d: List[SkeletonDetector.Skeleton] = skeleton_detector.detect_skeletons_2d(
-                    colour_image, visualise_output=True
-                )
+                skeletons_2d, output_image = skeleton_detector.detect_skeletons_2d(colour_image)
 
                 ws_points: np.ndarray = GeometryUtil.compute_world_points_image_fast(
                     depth_image, np.eye(4), camera.get_depth_intrinsics()
                 )
 
+                mask: np.ndarray = np.where(depth_image != 0, 255, 0).astype(np.uint8)
+
                 skeletons_3d: List[SkeletonDetector.Skeleton] = skeleton_detector.lift_skeletons_to_3d(
-                    skeletons_2d, ws_points
+                    skeletons_2d, ws_points, mask
                 )
 
-                cv2.imshow("Depth Image", depth_image / 2)
+                depth_image_uc: np.ndarray = np.clip(depth_image * 255 / 5, 0, 255).astype(np.uint8)
+                if output_image is not None:
+                    blended_image: np.ndarray = np.zeros(colour_image.shape, dtype=np.uint8)
+                    for i in range(3):
+                        blended_image[:, :, i] = (output_image[:, :, i] * 0.5 + depth_image_uc * 0.5).astype(np.uint8)
+                    cv2.imshow("Depth Image", blended_image)
+                else:
+                    cv2.imshow("Depth Image", depth_image_uc)
 
                 c: int = cv2.waitKey(1)
                 if c == ord("q"):
