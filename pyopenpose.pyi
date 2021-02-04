@@ -3,6 +3,23 @@ import numpy as np
 from typing import Any, Dict, List
 
 
+# FUNCTIONS
+
+# noinspection PyPep8Naming
+def getPoseBodyPartMapping(poseModel: PoseModel) -> Dict[int, str]: ...
+
+
+# CLASSES
+
+class Datum:
+    cvInputData: np.ndarray
+    cvOutputData: np.ndarray
+    poseKeypoints: np.ndarray
+
+    def __init__(self): ...
+
+
+# noinspection PyPep8Naming
 class WrapperPython:
     def configure(self, params: Dict[str, Any]): ...
     def emplaceAndPop(self, l: List[Datum]) -> None: ...
@@ -12,8 +29,15 @@ class WrapperPython:
     def waitAndEmplace(self, l: List[Datum]) -> None: ...
     def waitAndPop(self, l: List[Datum]) -> bool: ...
 
-class Datum:
-    cvOutputData: np.ndarray
-    poseKeypoints: np.ndarray
 
-    def __init__(self): ...
+# ENUMERATIONS
+
+class PoseModel(int):
+    pass
+
+BODY_25: PoseModel
+COCO_18: PoseModel
+MPI_15: PoseModel
+MPI_15_4: PoseModel
+BODY_25B: PoseModel
+BODY_135: PoseModel
