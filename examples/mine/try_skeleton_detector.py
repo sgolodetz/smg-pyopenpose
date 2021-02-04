@@ -20,7 +20,7 @@ from smg.utility import GeometryUtil
 
 def render_skeleton(skeleton: SkeletonDetector.Skeleton) -> None:
     for keypoint_name, keypoint in skeleton.keypoints.items():
-        glColor3f(1.0, 0.0, 0.0)
+        glColor3f(1 - keypoint.score, keypoint.score, 0.0)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
         OpenGLUtil.render_sphere(keypoint.position, 0.05, slices=10, stacks=10)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
@@ -30,10 +30,6 @@ def render_skeleton(skeleton: SkeletonDetector.Skeleton) -> None:
     for keypoint1, keypoint2 in skeleton.bones:
         glVertex3f(*keypoint1.position)
         glVertex3f(*keypoint2.position)
-        if np.linalg.norm(keypoint1.position) < 0.01:
-            print(keypoint1.name)
-        if np.linalg.norm(keypoint2.position) < 0.01:
-            print(keypoint2.name)
     glEnd()
 
 
