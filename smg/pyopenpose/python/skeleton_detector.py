@@ -113,11 +113,10 @@ class SkeletonDetector:
         else:
             return [], None
 
-    def detect_skeletons_3d(self, colour_image: np.ndarray, ws_points: np.ndarray, mask: np.ndarray, *,
-                            visualise_output: bool = True) -> Optional[List[Skeleton]]:
-        return self.lift_skeletons_to_3d(
-            self.detect_skeletons_2d(colour_image, visualise_output=visualise_output), ws_points, mask
-        )
+    def detect_skeletons_3d(self, colour_image: np.ndarray, ws_points: np.ndarray,
+                            mask: np.ndarray) -> Tuple[List[Skeleton], Optional[np.ndarray]]:
+        skeletons_2d, output_image = self.detect_skeletons_2d(colour_image)
+        return self.lift_skeletons_to_3d(skeletons_2d, ws_points, mask), output_image
 
     def lift_skeleton_to_3d(self, skeleton_2d: Skeleton, ws_points: np.ndarray, mask: np.ndarray) -> Skeleton:
         keypoints_3d: Dict[str, SkeletonDetector.Keypoint] = {}

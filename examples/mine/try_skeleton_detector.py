@@ -19,11 +19,21 @@ from smg.utility import GeometryUtil
 
 
 def render_skeleton(skeleton: SkeletonDetector.Skeleton) -> None:
+    glEnable(GL_LIGHTING)
+    glEnable(GL_LIGHT0)
+    pos: np.ndarray = np.array([0.0, 0.0, -1.0, 0.0])
+    glLightfv(GL_LIGHT0, GL_POSITION, pos)
+    glEnable(GL_LIGHT1)
+    glLightfv(GL_LIGHT1, GL_DIFFUSE, np.array([1, 1, 1, 1]))
+    glLightfv(GL_LIGHT1, GL_SPECULAR, np.array([1, 1, 1, 1]))
+    glLightfv(GL_LIGHT1, GL_POSITION, -pos)
+
+    glEnable(GL_COLOR_MATERIAL)
+    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
+
     for keypoint_name, keypoint in skeleton.keypoints.items():
         glColor3f(1 - keypoint.score, keypoint.score, 0.0)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
         OpenGLUtil.render_sphere(keypoint.position, 0.05, slices=10, stacks=10)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
     glColor3f(0.0, 0.0, 1.0)
     glBegin(GL_LINES)
@@ -31,6 +41,9 @@ def render_skeleton(skeleton: SkeletonDetector.Skeleton) -> None:
         glVertex3f(*keypoint1.position)
         glVertex3f(*keypoint2.position)
     glEnd()
+
+    glDisable(GL_COLOR_MATERIAL)
+    glDisable(GL_LIGHTING)
 
 
 def main() -> None:
