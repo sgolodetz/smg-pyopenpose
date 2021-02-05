@@ -133,17 +133,20 @@ class SkeletonDetector:
 
     def detect_skeletons_2d(self, colour_image: np.ndarray) -> Tuple[List[Skeleton], np.ndarray]:
         """
-        Detect 2D skeletons in the specified colour image using OpenPose.
+        Detect 2D skeletons in a colour image using OpenPose.
 
         :param colour_image:    The colour image.
         :return:                A tuple consisting of the detected 2D skeletons and the OpenPose visualisation
-                                of what's been detected.
+                                of what it detected.
         """
+        # Run OpenPose on the colour image.
         datum: Datum = Datum()
         datum.cvInputData = colour_image
         self.__wrapper.emplaceAndPop([datum])
 
+        # If any 2D skeletons were detected:
         if len(datum.poseKeypoints.shape) > 0:
+            # Assemble them into an easier-to-use format.
             skeletons: List[SkeletonDetector.Skeleton] = []
             skeleton_count: int = datum.poseKeypoints.shape[0]
 
@@ -152,12 +155,12 @@ class SkeletonDetector:
                 pose_keypoint_count: int = pose_keypoints.shape[0]
                 skeleton_keypoints: Dict[str, SkeletonDetector.Keypoint] = {}
                 for j in range(pose_keypoint_count):
-                    keypoint_name: str = self.__keypoint_names[j]
-                    keypoint_score: float = pose_keypoints[j][2]
-                    if keypoint_score > 0.0:
-                        skeleton_keypoints[keypoint_name] = SkeletonDetector.Keypoint(
-                            keypoint_name, pose_keypoints[j][:2], keypoint_score
-                        )
+                    score: float = pose_keypoints[j][2]
+                    if score > 0.0:
+                        name: str = self.__keypoint_names[j]
+                        position: np.ndarray = pose_keypoints[j][:2]
+                        skeleton_keypoints[name] = SkeletonDetector.Keypoint(name, position, score)
+
                 skeletons.append(SkeletonDetector.Skeleton(skeleton_keypoints, self.__keypoint_pairs))
 
             return skeletons, datum.cvOutputData
@@ -166,32 +169,56 @@ class SkeletonDetector:
 
     def detect_skeletons_3d(self, colour_image: np.ndarray, ws_points: np.ndarray,
                             mask: np.ndarray) -> Tuple[List[Skeleton], np.ndarray]:
+        """
+        Detect 3D skeletons in an RGB-D image using OpenPose.
+
+        :param colour_image:    The colour part of the RGB-D image.
+        :param ws_points:       The world-space points image obtained from the depth part of the RGB-D image.
+        :param mask:            A binary mask indicating which pixels have a valid world-space point.
+        :return:                A tuple consisting of the detected 3D skeletons and the OpenPose visualisation
+                                of what it detected.
+        """
         skeletons_2d, output_image = self.detect_skeletons_2d(colour_image)
         return self.lift_skeletons_to_3d(skeletons_2d, ws_points, mask), output_image
 
     def lift_skeleton_to_3d(self, skeleton_2d: Skeleton, ws_points: np.ndarray, mask: np.ndarray) -> Skeleton:
-        keypoints_3d: Dict[str, SkeletonDetector.Keypoint] = {}
+        """
+        Lift a 2D skeleton to 3D by back-projecting its keypoints into world space.
 
+        :param skeleton_2d:     The 2D skeleton.
+        :param ws_points:       The world-space points image.
+        :param mask:            A binary mask indicating which pixels have a valid world-space point.
+        :return:                The 3D skeleton.
+        """
+        keypoints_3d: Dict[str, SkeletonDetector.Keypoint] = {}
         height, width = ws_points.shape[:2]
 
-        # noinspection PyUnusedLocal
-        keypoint_name: str
-        # noinspection PyUnusedLocal
-        keypoint_2d: SkeletonDetector.Keypoint
-
+        # For each keypoint in the 2D skeleton:
         for keypoint_name, keypoint_2d in skeleton_2d.keypoints.items():
+            # Determine the pixel in the image corresponding to the keypoint.
             x, y = np.round(keypoint_2d.position).astype(int)
 
+            # If the pixel is within the image bounds, and has a valid world-space point:
             # noinspection PyChainedComparisons
             if 0 <= x < width and 0 <= y < height and mask[y, x] != 0:
+                # Make the corresponding 3D keypoint and add it to the list.
                 keypoints_3d[keypoint_name] = SkeletonDetector.Keypoint(
                     keypoint_name, ws_points[y, x], keypoint_2d.score
                 )
 
+        # Make a 3D skeleton from the list of 3D keypoints, and return it.
         return SkeletonDetector.Skeleton(keypoints_3d, self.__keypoint_pairs)
 
     def lift_skeletons_to_3d(self, skeletons_2d: List[Skeleton], ws_points: np.ndarray,
                              mask: np.ndarray) -> List[Skeleton]:
+        """
+        Lift a set of 2D skeletons to 3D by back-projecting their keypoints into world space.
+
+        :param skeletons_2d:    The 2D skeletons.
+        :param ws_points:       The world-space points image.
+        :param mask:            A binary mask indicating which pixels have a valid world-space point.
+        :return:                The 3D skeletons.
+        """
         return [self.lift_skeleton_to_3d(skeleton_2d, ws_points, mask) for skeleton_2d in skeletons_2d]
 
     def terminate(self) -> None:
