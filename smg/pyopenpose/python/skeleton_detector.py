@@ -145,28 +145,35 @@ class SkeletonDetector:
 
     @staticmethod
     def remove_bad_bones(skeleton: Skeleton, expected_bone_lengths: Dict[Tuple[str, str], float], *,
-                         tolerance: float = 0.1) -> Skeleton:
+                         tolerance: float = 0.3) -> Skeleton:
         """
         Remove from the specified skeleton any bone whose estimated length is different from its expected length
         by more than the specified tolerance (in m).
 
         :param skeleton:                The skeleton.
         :param expected_bone_lengths:   The expected lengths of different bones (in m).
-        :param tolerance:               The maximum amount by which the estimated length of a bone can differ from
-                                        its expected length without the bone being removed.
+        :param tolerance:               The maximum fraction by which the estimated length of a bone can differ
+                                        from its expected length without the bone being removed.
         :return:                        A copy of the skeleton from which the bad bones have been removed.
         """
+        good_keypoints: Dict[str, SkeletonDetector.Keypoint] = {}
         good_keypoint_pairs: List[Tuple[str, str]] = []
 
+        # Determine the good bones and the keypoints they touch.
         for keypoint1, keypoint2 in skeleton.bones:
             bone_key: Tuple[str, str] = SkeletonDetector.make_bone_key(keypoint1, keypoint2)
             expected_bone_length: Optional[float] = expected_bone_lengths.get(bone_key)
             if expected_bone_length is not None:
                 bone_length: float = np.linalg.norm(keypoint1.position - keypoint2.position)
-                if np.abs(bone_length - expected_bone_length) <= tolerance:
+                if np.abs(bone_length - expected_bone_length) / expected_bone_length <= tolerance:
                     good_keypoint_pairs.append((keypoint1.name, keypoint2.name))
+                    if good_keypoints.get(keypoint1.name) is None:
+                        good_keypoints[keypoint1.name] = keypoint1
+                    if good_keypoints.get(keypoint2.name) is None:
+                        good_keypoints[keypoint2.name] = keypoint2
 
-        return SkeletonDetector.Skeleton(skeleton.keypoints, good_keypoint_pairs)
+        # Return a filtered skeleton.
+        return SkeletonDetector.Skeleton(good_keypoints, good_keypoint_pairs)
 
     # PUBLIC METHODS
 
