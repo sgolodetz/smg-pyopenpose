@@ -33,7 +33,7 @@ def update_bone_lengths(bone_lengths: Dict[str, List[float]], skeleton: Skeleton
 
 
 def render_skeleton(skeleton: SkeletonDetector.Skeleton) -> None:
-    # Extracted from poseParametersRender.hpp in OpenPose.
+    # Obtained from the keypoints_pose_25.png file.
     bone_colours: Dict[str, np.ndarray] = {
         "['MidHip', 'Neck']": np.array([153., 0., 0.]),
         "['Neck', 'RShoulder']": np.array([153., 51., 0.]),
@@ -62,62 +62,6 @@ def render_skeleton(skeleton: SkeletonDetector.Skeleton) -> None:
         "['RBigToe', 'RSmallToe']": np.array([0., 153., 153.]),
         "['RAnkle', 'RHeel']": np.array([0., 153., 153.])
     }
-
-    # bone_colours: Dict[str, np.ndarray] = {
-    #     "['MidHip', 'Neck']": np.array([255.,     0.,    85.]),
-    #     "['Neck', 'RShoulder']": np.array([255.,     0.,     0.]),
-    #     "['LShoulder', 'Neck']": np.array([255.,    85.,     0.]),
-    #     "['RElbow', 'RShoulder']": np.array([255.,   170.,     0.]),
-    #     "['RElbow', 'RWrist']": np.array([255.,   255.,     0.]),
-    #     "['LElbow', 'LShoulder']": np.array([170.,   255.,     0.]),
-    #     "['LElbow', 'LWrist']": np.array([85.,   255.,     0.]),
-    #     "['MidHip', 'RHip']": np.array([0.,   255.,     0.]),
-    #     "['RHip', 'RKnee']": np.array([255.,     0.,     0.]),
-    #     "['RAnkle', 'RKnee']": np.array([0.,   255.,    85.]),
-    #     "['LHip', 'MidHip']": np.array([0.,   255.,   170.]),
-    #     "['LHip', 'LKnee']": np.array([0.,   255.,   255.]),
-    #     "['LAnkle', 'LKnee']": np.array([0.,   170.,   255.]),
-    #     "['Neck', 'Nose']": np.array([0.,    85.,   255.]),
-    #     "['Nose', 'REye']": np.array([0.,     0.,   255.]),
-    #     "['REar', 'REye']": np.array([255.,     0.,   170.]),
-    #     "['LEye', 'Nose']": np.array([170.,     0.,   255.]),
-    #     "['LEar', 'LEye']": np.array([255.,     0.,   255.]),
-    #     "['REar', 'RShoulder']": np.array([85.,     0.,   255.]),
-    #     "['LEar', 'LShoulder']": np.array([0.,     0.,   255.]),
-    #     "['LAnkle', 'LBigToe']": np.array([0.,     0.,   255.]),
-    #     "['LBigToe', 'LSmallToe']": np.array([0.,     0.,   255.]),
-    #     "['LAnkle', 'LHeel']": np.array([0.,   255.,   255.]),
-    #     "['RAnkle', 'RBigToe']": np.array([0.,   255.,   255.]),
-    #     "['RBigToe', 'RSmallToe']": np.array([0.,   255.,   255.])
-    # }
-
-    # bone_colours: Dict[str, np.ndarray] = {
-    #     "['Neck', 'Nose']": np.array([255., 0., 85.]),  # Correct
-    #     "['MidHip', 'Neck']": np.array([255., 0., 0.]),  # Correct
-    #     "['Neck', 'RShoulder']": np.array([255., 85., 0.]),  # Correct
-    #     "['RElbow', 'RShoulder']": np.array([255., 170., 0.]),  # Correct
-    #     "['RElbow', 'RWrist']": np.array([255., 255., 0.]),  # Correct
-    #     "['LShoulder', 'Neck']": np.array([170., 255., 0.]),  # Correct
-    #     "['LElbow', 'LWrist']": np.array([0., 255., 0.]),
-    #     "['MidHip', 'RHip']": np.array([0., 255., 0.]),
-    #     "['RHip', 'RKnee']": np.array([0., 255., 170.]),
-    #     "['RAnkle', 'RKnee']": np.array([0., 255., 85.]),
-    #     "['LHip', 'MidHip']": np.array([0., 170., 255.]),  # np.array([0., 255., 170.]),
-    #     "['LHip', 'LKnee']": np.array([0., 85., 255.]),
-    #     "['LAnkle', 'LKnee']": np.array([0., 0., 255.]),
-    #     "['LElbow', 'LShoulder']": np.array([85., 255., 0.]),  # Wrong
-    #     "['Nose', 'REye']": np.array([0., 0., 255.]),
-    #     "['REar', 'REye']": np.array([255., 0., 170.]),
-    #     "['LEar', 'LEye']": np.array([85., 0., 255.]),  #  np.array([170., 0., 255.]),
-    #     "['LEye', 'Nose']": np.array([255., 0., 255.]),
-    #     # "['REar', 'RShoulder']": np.array([85., 0., 255.]),
-    #     # "['LEar', 'LShoulder']": np.array([0., 0., 255.]),
-    #     "['LAnkle', 'LBigToe']": np.array([0., 0., 255.]),
-    #     "['LBigToe', 'LSmallToe']": np.array([0., 0., 255.]),
-    #     "['LAnkle', 'LHeel']": np.array([0., 255., 255.]),
-    #     "['RAnkle', 'RBigToe']": np.array([0., 255., 255.]),
-    #     "['RBigToe', 'RSmallToe']": np.array([0., 255., 255.])
-    # }
 
     glEnable(GL_LIGHTING)
     glEnable(GL_LIGHT0)
@@ -149,16 +93,6 @@ def render_skeleton(skeleton: SkeletonDetector.Skeleton) -> None:
 
 def main() -> None:
     np.set_printoptions(suppress=True)
-
-    # import smg.pyopenpose as op
-    # xs = op.getPosePartPairs(op.BODY_25)
-    # xs = list(zip(xs[::2], xs[1::2]))
-    # names = op.getPoseBodyPartMapping(op.BODY_25)
-    # from pprint import pprint
-    # pprint(names)
-    # pprint(xs)
-    # pprint([str(sorted([names[i], names[j]])) for i, j in xs])
-    # return
 
     # Initialise PyGame and create the window.
     pygame.init()
