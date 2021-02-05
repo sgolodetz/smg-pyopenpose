@@ -98,7 +98,7 @@ def main() -> None:
     pygame.init()
     window_size: Tuple[int, int] = (640, 480)
     pygame.display.set_mode(window_size, pygame.DOUBLEBUF | pygame.OPENGL)
-    pygame.display.set_caption("Skeleton Detector")
+    pygame.display.set_caption("3D Skeleton Detector")
 
     # Enable the z-buffer.
     glEnable(GL_DEPTH_TEST)
@@ -139,13 +139,10 @@ def main() -> None:
                 #     update_bone_lengths(bone_lengths, skeleton_3d)
 
                 depth_image_uc: np.ndarray = np.clip(depth_image * 255 / 5, 0, 255).astype(np.uint8)
-                if output_image is not None:
-                    blended_image: np.ndarray = np.zeros(colour_image.shape, dtype=np.uint8)
-                    for i in range(3):
-                        blended_image[:, :, i] = (output_image[:, :, i] * 0.5 + depth_image_uc * 0.5).astype(np.uint8)
-                    cv2.imshow("Depth Image", output_image)
-                else:
-                    cv2.imshow("Depth Image", depth_image_uc)
+                blended_image: np.ndarray = np.zeros(colour_image.shape, dtype=np.uint8)
+                for i in range(3):
+                    blended_image[:, :, i] = (output_image[:, :, i] * 0.5 + depth_image_uc * 0.5).astype(np.uint8)
+                cv2.imshow("2D OpenPose Result", blended_image)
 
                 c: int = cv2.waitKey(1)
                 if c == ord("q"):

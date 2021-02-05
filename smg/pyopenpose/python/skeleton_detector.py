@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import cv2
 import numpy as np
 
 from typing import Any, Dict, List, Optional, Tuple
@@ -19,6 +18,13 @@ class SkeletonDetector:
         # CONSTRUCTOR
 
         def __init__(self, name: str, position: np.ndarray, score: float):
+            """
+            Construct a keypoint.
+
+            :param name:        The name of the keypoint.
+            :param position:    The position of the keypoint (either 2D or 3D).
+            :param score:       The score that OpenPose assigned to the keypoint (a float in [0,1]).
+            """
             self.__name: str = name
             self.__position: np.ndarray = position
             self.__score: float = score
@@ -27,14 +33,29 @@ class SkeletonDetector:
 
         @property
         def name(self) -> str:
+            """
+            Get the name of the keypoint.
+
+            :return:    The name of the keypoint.
+            """
             return self.__name
 
         @property
         def position(self) -> np.ndarray:
+            """
+            Get the position of the keypoint.
+
+            :return:    The position of the keypoint.
+            """
             return self.__position
 
         @property
         def score(self) -> float:
+            """
+            Get the score that OpenPose assigned to the keypoint.
+
+            :return:    The score that OpenPose assigned to the keypoint (a float in [0,1]).
+            """
             return self.__score
 
     class Skeleton:
@@ -43,7 +64,15 @@ class SkeletonDetector:
         # CONSTRUCTOR
 
         def __init__(self, keypoints: Dict[str, SkeletonDetector.Keypoint], keypoint_pairs: List[Tuple[str, str]]):
+            """
+            Construct a skeleton.
+
+            :param keypoints:       The keypoints that have been detected for the skeleton.
+            :param keypoint_pairs:  Pairs of names denoting keypoints that should be joined by bones.
+            """
             self.__keypoints: Dict[str, SkeletonDetector.Keypoint] = keypoints
+
+            # Filter the pairs of names, keeping only those for which both keypoints have been detected.
             self.__keypoint_pairs: List[Tuple[str, str]] = [
                 (i, j) for i, j in keypoint_pairs if i in self.__keypoints and j in self.__keypoints
             ]
@@ -52,15 +81,30 @@ class SkeletonDetector:
 
         @property
         def bones(self) -> List[Tuple[SkeletonDetector.Keypoint, SkeletonDetector.Keypoint]]:
+            """
+            Get the bones of the skeleton.
+
+            :return:    The bones of the skeleton, as a list of detected keypoint pairs.
+            """
             return [(self.__keypoints[i], self.__keypoints[j]) for i, j in self.__keypoint_pairs]
 
         @property
         def keypoints(self) -> Dict[str, SkeletonDetector.Keypoint]:
+            """
+            Get the detected keypoints of the skeleton.
+
+            :return:    The detected keypoints of the skeleton, as a keypoint name -> keypoint map.
+            """
             return self.__keypoints
 
     # CONSTRUCTOR
 
     def __init__(self, params: Dict[str, Any]):
+        """
+        Construct a 3D skeleton detector based on OpenPose.
+
+        :param params:  The parameters with which to configure OpenPose.
+        """
         self.__wrapper: WrapperPython = WrapperPython()
         self.__wrapper.configure(params)
         self.__wrapper.start()
@@ -87,7 +131,14 @@ class SkeletonDetector:
 
     # PUBLIC METHODS
 
-    def detect_skeletons_2d(self, colour_image: np.ndarray) -> Tuple[List[Skeleton], Optional[np.ndarray]]:
+    def detect_skeletons_2d(self, colour_image: np.ndarray) -> Tuple[List[Skeleton], np.ndarray]:
+        """
+        Detect 2D skeletons in the specified colour image using OpenPose.
+
+        :param colour_image:    The colour image.
+        :return:                A tuple consisting of the detected 2D skeletons and the OpenPose visualisation
+                                of what's been detected.
+        """
         datum: Datum = Datum()
         datum.cvInputData = colour_image
         self.__wrapper.emplaceAndPop([datum])
@@ -111,10 +162,10 @@ class SkeletonDetector:
 
             return skeletons, datum.cvOutputData
         else:
-            return [], None
+            return [], colour_image
 
     def detect_skeletons_3d(self, colour_image: np.ndarray, ws_points: np.ndarray,
-                            mask: np.ndarray) -> Tuple[List[Skeleton], Optional[np.ndarray]]:
+                            mask: np.ndarray) -> Tuple[List[Skeleton], np.ndarray]:
         skeletons_2d, output_image = self.detect_skeletons_2d(colour_image)
         return self.lift_skeletons_to_3d(skeletons_2d, ws_points, mask), output_image
 
@@ -144,4 +195,5 @@ class SkeletonDetector:
         return [self.lift_skeleton_to_3d(skeleton_2d, ws_points, mask) for skeleton_2d in skeletons_2d]
 
     def terminate(self) -> None:
+        """Destroy the detector."""
         self.__wrapper.stop()
