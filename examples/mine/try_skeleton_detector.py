@@ -5,6 +5,7 @@ import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame
 
+from argparse import ArgumentParser
 from OpenGL.GL import *
 from timeit import default_timer as timer
 from typing import Any, Dict, List, Optional, Tuple
@@ -22,6 +23,13 @@ from smg.utility import GeometryUtil
 def main() -> None:
     np.set_printoptions(suppress=True)
 
+    # Parse any command-line arguments.
+    parser = ArgumentParser()
+    parser.add_argument(
+        "--use_tracker", action="store_true", help="whether to use the tracker"
+    )
+    args: dict = vars(parser.parse_args())
+
     # Initialise PyGame and create the window.
     pygame.init()
     window_size: Tuple[int, int] = (640, 480)
@@ -37,13 +45,18 @@ def main() -> None:
         SimpleCamera([0, 0, 0], [0, 0, 1], [0, -1, 0]), canonical_angular_speed=0.05, canonical_linear_speed=0.1
     )
 
-    params: Dict[str, Any] = {"model_folder": "D:/openpose-1.6.0/models/"}
-    with SkeletonDetector(params) as skeleton_detector:
-        with OpenNICamera(mirror_images=True) as camera:
-            with RGBDTracker(
-                settings_file=f"settings-kinect.yaml", use_viewer=True,
-                voc_file="C:/orbslam2/Vocabulary/ORBvoc.txt", wait_till_ready=True
-            ) as tracker:
+    # If requested, construct the tracker.
+    tracker: Optional[RGBDTracker] = None
+    if args["use_tracker"]:
+        tracker = RGBDTracker(
+            settings_file=f"settings-kinect.yaml", use_viewer=False,
+            voc_file="C:/orbslam2/Vocabulary/ORBvoc.txt", wait_till_ready=False
+        )
+
+    try:
+        params: Dict[str, Any] = {"model_folder": "D:/openpose-1.6.0/models/"}
+        with SkeletonDetector(params) as skeleton_detector:
+            with OpenNICamera(mirror_images=True) as camera:
                 bone_length_estimator: BoneLengthEstimator = BoneLengthEstimator()
 
                 while True:
@@ -57,18 +70,14 @@ def main() -> None:
                     colour_image, depth_image = camera.get_images()
                     skeletons_2d, output_image = skeleton_detector.detect_skeletons_2d(colour_image)
 
-                    # If the tracker's not yet ready, or the pose can't be estimated for this frame, continue.
-                    if not tracker.is_ready():
-                        continue
-
-                    tracker_c_t_w: Optional[np.ndarray] = tracker.estimate_pose(colour_image, depth_image)
-                    if tracker_c_t_w is None:
-                        continue
-
-                    tracker_w_t_c: np.ndarray = np.linalg.inv(tracker_c_t_w)
+                    detection_pose: np.ndarray = np.eye(4)
+                    if tracker is not None and tracker.is_ready():
+                        tracker_c_t_w: Optional[np.ndarray] = tracker.estimate_pose(colour_image, depth_image)
+                        if tracker_c_t_w is not None:
+                            detection_pose = np.linalg.inv(tracker_c_t_w)
 
                     ws_points: np.ndarray = GeometryUtil.compute_world_points_image_fast(
-                        depth_image, tracker_w_t_c, camera.get_depth_intrinsics()
+                        depth_image, detection_pose, camera.get_depth_intrinsics()
                     )
 
                     mask: np.ndarray = np.where(depth_image != 0, 255, 0).astype(np.uint8)
@@ -124,6 +133,13 @@ def main() -> None:
 
                     # Swap the front and back buffers.
                     pygame.display.flip()
+
+                # Forcibly terminate the whole process. This isn't graceful, but ORB-SLAM can sometimes take a
+                # long time to shut down, and it's dull to wait for it.
+                # noinspection PyProtectedMember
+                os._exit(0)
+    except RuntimeError as e:
+        print(e)
 
 
 if __name__ == "__main__":
