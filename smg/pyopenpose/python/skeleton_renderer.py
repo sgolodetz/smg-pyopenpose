@@ -5,6 +5,7 @@ from typing import Dict, Optional, Tuple
 
 from smg.opengl import OpenGLUtil
 
+from .skeleton import Skeleton
 from .skeleton_detector import SkeletonDetector
 
 
@@ -14,7 +15,7 @@ class SkeletonRenderer:
     # PUBLIC STATIC METHODS
 
     @staticmethod
-    def render_skeleton(skeleton: SkeletonDetector.Skeleton) -> None:
+    def render_skeleton(skeleton: Skeleton) -> None:
         """
         Render the specified 3D skeleton using OpenGL.
 

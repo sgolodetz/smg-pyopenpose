@@ -5,97 +5,11 @@ import numpy as np
 from typing import Any, Dict, List, Optional, Tuple
 
 from ..cpp.pyopenpose import *
+from .skeleton import Skeleton
 
 
 class SkeletonDetector:
     """A 3D skeleton detector based on OpenPose."""
-
-    # NESTED TYPES
-
-    class Keypoint:
-        """A keypoint (either 2D or 3D)."""
-
-        # CONSTRUCTOR
-
-        def __init__(self, name: str, position: np.ndarray, score: float):
-            """
-            Construct a keypoint.
-
-            :param name:        The name of the keypoint.
-            :param position:    The position of the keypoint (either 2D or 3D).
-            :param score:       The score that OpenPose assigned to the keypoint (a float in [0,1]).
-            """
-            self.__name: str = name
-            self.__position: np.ndarray = position
-            self.__score: float = score
-
-        # PROPERTIES
-
-        @property
-        def name(self) -> str:
-            """
-            Get the name of the keypoint.
-
-            :return:    The name of the keypoint.
-            """
-            return self.__name
-
-        @property
-        def position(self) -> np.ndarray:
-            """
-            Get the position of the keypoint.
-
-            :return:    The position of the keypoint.
-            """
-            return self.__position
-
-        @property
-        def score(self) -> float:
-            """
-            Get the score that OpenPose assigned to the keypoint.
-
-            :return:    The score that OpenPose assigned to the keypoint (a float in [0,1]).
-            """
-            return self.__score
-
-    class Skeleton:
-        """A skeleton."""
-
-        # CONSTRUCTOR
-
-        def __init__(self, keypoints: Dict[str, SkeletonDetector.Keypoint], keypoint_pairs: List[Tuple[str, str]]):
-            """
-            Construct a skeleton.
-
-            :param keypoints:       The keypoints that have been detected for the skeleton.
-            :param keypoint_pairs:  Pairs of names denoting keypoints that should be joined by bones.
-            """
-            self.__keypoints: Dict[str, SkeletonDetector.Keypoint] = keypoints
-
-            # Filter the pairs of names, keeping only those for which both keypoints have been detected.
-            self.__keypoint_pairs: List[Tuple[str, str]] = [
-                (i, j) for i, j in keypoint_pairs if i in self.__keypoints and j in self.__keypoints
-            ]
-
-        # PROPERTIES
-
-        @property
-        def bones(self) -> List[Tuple[SkeletonDetector.Keypoint, SkeletonDetector.Keypoint]]:
-            """
-            Get the bones of the skeleton.
-
-            :return:    The bones of the skeleton, as a list of detected keypoint pairs.
-            """
-            return [(self.__keypoints[i], self.__keypoints[j]) for i, j in self.__keypoint_pairs]
-
-        @property
-        def keypoints(self) -> Dict[str, SkeletonDetector.Keypoint]:
-            """
-            Get the detected keypoints of the skeleton.
-
-            :return:    The detected keypoints of the skeleton, as a keypoint name -> keypoint map.
-            """
-            return self.__keypoints
 
     # CONSTRUCTOR
 
@@ -132,7 +46,7 @@ class SkeletonDetector:
     # PUBLIC STATIC METHODS
 
     @staticmethod
-    def make_bone_key(keypoint1: Keypoint, keypoint2: Keypoint) -> Tuple[str, str]:
+    def make_bone_key(keypoint1: Skeleton.Keypoint, keypoint2: Skeleton.Keypoint) -> Tuple[str, str]:
         """
         Make a key that can be used to look up a bone in a dictionary.
 
@@ -156,7 +70,7 @@ class SkeletonDetector:
                                         from its expected length without the bone being removed.
         :return:                        A copy of the skeleton from which the bad bones have been removed.
         """
-        good_keypoints: Dict[str, SkeletonDetector.Keypoint] = {}
+        good_keypoints: Dict[str, Skeleton.Keypoint] = {}
         good_keypoint_pairs: List[Tuple[str, str]] = []
 
         # Determine the good bones and the keypoints they touch.
@@ -173,7 +87,7 @@ class SkeletonDetector:
                         good_keypoints[keypoint2.name] = keypoint2
 
         # Return a filtered skeleton.
-        return SkeletonDetector.Skeleton(good_keypoints, good_keypoint_pairs)
+        return Skeleton(good_keypoints, good_keypoint_pairs)
 
     # PUBLIC METHODS
 
@@ -193,21 +107,21 @@ class SkeletonDetector:
         # If any 2D skeletons were detected:
         if len(datum.poseKeypoints.shape) > 0:
             # Assemble them into an easier-to-use format.
-            skeletons: List[SkeletonDetector.Skeleton] = []
+            skeletons: List[Skeleton] = []
             skeleton_count: int = datum.poseKeypoints.shape[0]
 
             for i in range(skeleton_count):
                 pose_keypoints: np.ndarray = datum.poseKeypoints[i, :, :]
                 pose_keypoint_count: int = pose_keypoints.shape[0]
-                skeleton_keypoints: Dict[str, SkeletonDetector.Keypoint] = {}
+                skeleton_keypoints: Dict[str, Skeleton.Keypoint] = {}
                 for j in range(pose_keypoint_count):
                     score: float = pose_keypoints[j][2]
                     if score > 0.0:
                         name: str = self.__keypoint_names[j]
                         position: np.ndarray = pose_keypoints[j][:2]
-                        skeleton_keypoints[name] = SkeletonDetector.Keypoint(name, position, score)
+                        skeleton_keypoints[name] = Skeleton.Keypoint(name, position, score)
 
-                skeletons.append(SkeletonDetector.Skeleton(skeleton_keypoints, self.__keypoint_pairs))
+                skeletons.append(Skeleton(skeleton_keypoints, self.__keypoint_pairs))
 
             return skeletons, datum.cvOutputData
         else:
@@ -236,7 +150,7 @@ class SkeletonDetector:
         :param mask:            A binary mask indicating which pixels have a valid world-space point.
         :return:                The 3D skeleton.
         """
-        keypoints_3d: Dict[str, SkeletonDetector.Keypoint] = {}
+        keypoints_3d: Dict[str, Skeleton.Keypoint] = {}
         height, width = ws_points.shape[:2]
 
         # For each keypoint in the 2D skeleton:
@@ -248,12 +162,10 @@ class SkeletonDetector:
             # noinspection PyChainedComparisons
             if 0 <= x < width and 0 <= y < height and mask[y, x] != 0:
                 # Make the corresponding 3D keypoint and add it to the list.
-                keypoints_3d[keypoint_name] = SkeletonDetector.Keypoint(
-                    keypoint_name, ws_points[y, x], keypoint_2d.score
-                )
+                keypoints_3d[keypoint_name] = Skeleton.Keypoint(keypoint_name, ws_points[y, x], keypoint_2d.score)
 
         # Make a 3D skeleton from the list of 3D keypoints, and return it.
-        return SkeletonDetector.Skeleton(keypoints_3d, self.__keypoint_pairs)
+        return Skeleton(keypoints_3d, self.__keypoint_pairs)
 
     def lift_skeletons_to_3d(self, skeletons_2d: List[Skeleton], ws_points: np.ndarray,
                              mask: np.ndarray) -> List[Skeleton]:

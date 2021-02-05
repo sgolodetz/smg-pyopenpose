@@ -3,7 +3,7 @@ import numpy as np
 from collections import deque
 from typing import Deque, Dict, Optional, Tuple
 
-from .skeleton_detector import SkeletonDetector
+from .skeleton_detector import Skeleton, SkeletonDetector
 
 
 class BoneLengthEstimator:
@@ -30,7 +30,7 @@ class BoneLengthEstimator:
 
     # PUBLIC METHODS
 
-    def add_estimates(self, skeleton: SkeletonDetector.Skeleton) -> None:
+    def add_estimates(self, skeleton: Skeleton) -> None:
         """
         Add bone length estimates based on the specified skeleton.
 

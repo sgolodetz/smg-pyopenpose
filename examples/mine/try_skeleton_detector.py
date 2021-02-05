@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from smg.opengl import OpenGLMatrixContext, OpenGLUtil
 from smg.openni import OpenNICamera
-from smg.pyopenpose import BoneLengthEstimator, SkeletonDetector, SkeletonRenderer
+from smg.pyopenpose import BoneLengthEstimator, Skeleton, SkeletonDetector, SkeletonRenderer
 from smg.pyorbslam2 import RGBDTracker
 from smg.rigging.cameras import SimpleCamera
 from smg.rigging.controllers import KeyboardCameraController
@@ -99,9 +99,7 @@ def main() -> None:
                     mask: np.ndarray = np.where(depth_image != 0, 255, 0).astype(np.uint8)
 
                     # Lift the 2D skeletons into 3D.
-                    skeletons_3d: List[SkeletonDetector.Skeleton] = skeleton_detector.lift_skeletons_to_3d(
-                        skeletons_2d, ws_points, mask
-                    )
+                    skeletons_3d: List[Skeleton] = skeleton_detector.lift_skeletons_to_3d(skeletons_2d, ws_points, mask)
 
                     # If there's only one skeleton in the frame:
                     # TODO: Once we can associate skeletons between frames, this limitation can be relaxed.
