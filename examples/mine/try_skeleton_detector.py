@@ -63,9 +63,10 @@ def main() -> None:
                 )
 
                 if len(skeletons_3d) == 1:
-                    bone_length_estimator.update(skeletons_3d[0])
+                    bone_length_estimator.add_estimates(skeletons_3d[0])
 
-                    expected_bone_lengths: Dict[Tuple[str, str], float] = bone_length_estimator.get_bone_lengths()
+                    expected_bone_lengths: Dict[Tuple[str, str], float] = \
+                        bone_length_estimator.get_expected_bone_lengths()
 
                     print(expected_bone_lengths)
 
