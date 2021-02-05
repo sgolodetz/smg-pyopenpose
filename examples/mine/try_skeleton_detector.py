@@ -141,7 +141,7 @@ def render_skeleton(skeleton: SkeletonDetector.Skeleton) -> None:
         if bone_colour is not None:
             bone_colour = bone_colour / 153
             glColor3f(*bone_colour)
-            OpenGLUtil.render_cylinder(keypoint1.position, keypoint2.position, 0.025, 0.025, slices=10, stacks=10)
+            OpenGLUtil.render_cylinder(keypoint1.position, keypoint2.position, 0.025, 0.025, slices=10)
 
     glDisable(GL_COLOR_MATERIAL)
     glDisable(GL_LIGHTING)
