@@ -11,25 +11,11 @@ from typing import Any, Dict, List, Tuple
 
 from smg.opengl import OpenGLMatrixContext, OpenGLUtil
 from smg.openni import OpenNICamera
-from smg.pyopenpose import SkeletonDetector, SkeletonRenderer
+from smg.pyopenpose import BoneLengthEstimator, SkeletonDetector, SkeletonRenderer
 from smg.rigging.cameras import SimpleCamera
 from smg.rigging.controllers import KeyboardCameraController
 from smg.rigging.helpers import CameraPoseConverter
 from smg.utility import GeometryUtil
-
-
-def update_bone_lengths(bone_lengths: Dict[str, List[float]], skeleton: SkeletonDetector.Skeleton) \
-        -> Dict[str, List[float]]:
-    for keypoint1, keypoint2 in skeleton.bones:
-        bone_name: str = str(sorted([keypoint1.name, keypoint2.name]))
-        bone_length: float = np.linalg.norm(keypoint1.position - keypoint2.position)
-        lengths_for_bone: List[float] = bone_lengths.get(bone_name, [])
-        lengths_for_bone.append(bone_length)
-        bone_lengths[bone_name] = lengths_for_bone
-
-    print(bone_lengths)
-
-    return bone_lengths
 
 
 def main() -> None:
@@ -53,7 +39,7 @@ def main() -> None:
     params: Dict[str, Any] = {"model_folder": "D:/openpose-1.6.0/models/"}
     with SkeletonDetector(params) as skeleton_detector:
         with OpenNICamera(mirror_images=True) as camera:
-            bone_lengths: Dict[str, List[float]] = {}
+            bone_length_estimator: BoneLengthEstimator = BoneLengthEstimator()
 
             while True:
                 # Process any PyGame events.
@@ -76,8 +62,16 @@ def main() -> None:
                     skeletons_2d, ws_points, mask
                 )
 
-                # for skeleton_3d in skeletons_3d:
-                #     update_bone_lengths(bone_lengths, skeleton_3d)
+                if len(skeletons_3d) == 1:
+                    bone_length_estimator.update(skeletons_3d[0])
+
+                    expected_bone_lengths: Dict[Tuple[str, str], float] = bone_length_estimator.get_bone_lengths()
+
+                    print(expected_bone_lengths)
+
+                    skeletons_3d = [
+                        SkeletonDetector.remove_bad_bones(skeleton, expected_bone_lengths) for skeleton in skeletons_3d
+                    ]
 
                 depth_image_uc: np.ndarray = np.clip(depth_image * 255 / 5, 0, 255).astype(np.uint8)
                 blended_image: np.ndarray = np.zeros(colour_image.shape, dtype=np.uint8)

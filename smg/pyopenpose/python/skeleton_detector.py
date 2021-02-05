@@ -129,6 +129,45 @@ class SkeletonDetector:
         """Destroy the detector at the end of the with statement that's used to manage its lifetime."""
         self.terminate()
 
+    # PUBLIC STATIC METHODS
+
+    @staticmethod
+    def make_bone_key(keypoint1: Keypoint, keypoint2: Keypoint) -> Tuple[str, str]:
+        """
+        Make a key that can be used to look up a bone in a dictionary.
+
+        :param keypoint1:   The keypoint at one end of the bone.
+        :param keypoint2:   The keypoint at the other end of the bone.
+        :return:            The key for the bone.
+        """
+        # noinspection PyTypeChecker
+        return tuple(sorted([keypoint1.name, keypoint2.name]))
+
+    @staticmethod
+    def remove_bad_bones(skeleton: Skeleton, expected_bone_lengths: Dict[Tuple[str, str], float], *,
+                         tolerance: float = 0.1) -> Skeleton:
+        """
+        Remove from the specified skeleton any bone whose estimated length is different from its expected length
+        by more than the specified tolerance (in m).
+
+        :param skeleton:                The skeleton.
+        :param expected_bone_lengths:   The expected lengths of different bones (in m).
+        :param tolerance:               The maximum amount by which the estimated length of a bone can differ from
+                                        its expected length without the bone being removed.
+        :return:                        A copy of the skeleton from which the bad bones have been removed.
+        """
+        good_keypoint_pairs: List[Tuple[str, str]] = []
+
+        for keypoint1, keypoint2 in skeleton.bones:
+            bone_key: Tuple[str, str] = SkeletonDetector.make_bone_key(keypoint1, keypoint2)
+            expected_bone_length: Optional[float] = expected_bone_lengths.get(bone_key)
+            if expected_bone_length is not None:
+                bone_length: float = np.linalg.norm(keypoint1.position - keypoint2.position)
+                if np.abs(bone_length - expected_bone_length) <= tolerance:
+                    good_keypoint_pairs.append((keypoint1.name, keypoint2.name))
+
+        return SkeletonDetector.Skeleton(skeleton.keypoints, good_keypoint_pairs)
+
     # PUBLIC METHODS
 
     def detect_skeletons_2d(self, colour_image: np.ndarray) -> Tuple[List[Skeleton], np.ndarray]:

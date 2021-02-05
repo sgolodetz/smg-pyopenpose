@@ -1,7 +1,7 @@
 import numpy as np
 
 from OpenGL.GL import *
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 from smg.opengl import OpenGLUtil
 
@@ -21,33 +21,34 @@ class SkeletonRenderer:
         :param skeleton:    The 3D skeleton.
         """
         # Specify the bone colours (see the keypoints_pose_25.png file).
-        bone_colours: Dict[str, np.ndarray] = {
-            "['MidHip', 'Neck']": np.array([153., 0., 0.]),
-            "['Neck', 'RShoulder']": np.array([153., 51., 0.]),
-            "['LShoulder', 'Neck']": np.array([102., 153., 0.]),
-            "['RElbow', 'RShoulder']": np.array([153., 102., 0.]),
-            "['RElbow', 'RWrist']": np.array([153., 153., 0.]),
-            "['LElbow', 'LShoulder']": np.array([51., 153., 0.]),
-            "['LElbow', 'LWrist']": np.array([0., 153., 0.]),
-            "['MidHip', 'RHip']": np.array([0., 153., 51.]),
-            "['RHip', 'RKnee']": np.array([0., 153., 102.]),
-            "['RAnkle', 'RKnee']": np.array([0., 153., 153.]),
-            "['LHip', 'MidHip']": np.array([0., 102., 153.]),
-            "['LHip', 'LKnee']": np.array([0., 51., 153.]),
-            "['LAnkle', 'LKnee']": np.array([0., 0., 153.]),
-            "['Neck', 'Nose']": np.array([153., 0., 51.]),
-            "['Nose', 'REye']": np.array([153., 0., 102.]),
-            "['REar', 'REye']": np.array([153., 0., 153.]),
-            "['LEye', 'Nose']": np.array([102., 0., 153.]),
-            "['LEar', 'LEye']": np.array([51., 0., 153.]),
-            "['REar', 'RShoulder']": np.array([0., 0., 255.]),
-            "['LEar', 'LShoulder']": np.array([0., 0., 255.]),
-            "['LAnkle', 'LBigToe']": np.array([0., 0., 153.]),
-            "['LBigToe', 'LSmallToe']": np.array([0., 0., 153.]),
-            "['LAnkle', 'LHeel']": np.array([0., 0., 153.]),
-            "['RAnkle', 'RBigToe']": np.array([0., 153., 153.]),
-            "['RBigToe', 'RSmallToe']": np.array([0., 153., 153.]),
-            "['RAnkle', 'RHeel']": np.array([0., 153., 153.])
+        # TODO: Support other pose models in the future.
+        bone_colours: Dict[Tuple[str, str], np.ndarray] = {
+            ('MidHip', 'Neck'): np.array([153., 0., 0.]),
+            ('Neck', 'RShoulder'): np.array([153., 51., 0.]),
+            ('LShoulder', 'Neck'): np.array([102., 153., 0.]),
+            ('RElbow', 'RShoulder'): np.array([153., 102., 0.]),
+            ('RElbow', 'RWrist'): np.array([153., 153., 0.]),
+            ('LElbow', 'LShoulder'): np.array([51., 153., 0.]),
+            ('LElbow', 'LWrist'): np.array([0., 153., 0.]),
+            ('MidHip', 'RHip'): np.array([0., 153., 51.]),
+            ('RHip', 'RKnee'): np.array([0., 153., 102.]),
+            ('RAnkle', 'RKnee'): np.array([0., 153., 153.]),
+            ('LHip', 'MidHip'): np.array([0., 102., 153.]),
+            ('LHip', 'LKnee'): np.array([0., 51., 153.]),
+            ('LAnkle', 'LKnee'): np.array([0., 0., 153.]),
+            ('Neck', 'Nose'): np.array([153., 0., 51.]),
+            ('Nose', 'REye'): np.array([153., 0., 102.]),
+            ('REar', 'REye'): np.array([153., 0., 153.]),
+            ('LEye', 'Nose'): np.array([102., 0., 153.]),
+            ('LEar', 'LEye'): np.array([51., 0., 153.]),
+            ('REar', 'RShoulder'): np.array([0., 0., 255.]),
+            ('LEar', 'LShoulder'): np.array([0., 0., 255.]),
+            ('LAnkle', 'LBigToe'): np.array([0., 0., 153.]),
+            ('LBigToe', 'LSmallToe'): np.array([0., 0., 153.]),
+            ('LAnkle', 'LHeel'): np.array([0., 0., 153.]),
+            ('RAnkle', 'RBigToe'): np.array([0., 153., 153.]),
+            ('RBigToe', 'RSmallToe'): np.array([0., 153., 153.]),
+            ('RAnkle', 'RHeel'): np.array([0., 153., 153.])
         }
 
         # Enable lighting.
@@ -74,8 +75,8 @@ class SkeletonRenderer:
 
         # Render the bones between the keypoints.
         for keypoint1, keypoint2 in skeleton.bones:
-            bone_name: str = str(sorted([keypoint1.name, keypoint2.name]))
-            bone_colour: Optional[np.ndarray] = bone_colours.get(bone_name)
+            bone_key: Tuple[str, str] = SkeletonDetector.make_bone_key(keypoint1, keypoint2)
+            bone_colour: Optional[np.ndarray] = bone_colours.get(bone_key)
             if bone_colour is not None:
                 # Note: We divide by 153 because that's the maximum value of a component in the colours table,
                 #       and we want the colours to be nice and vibrant.
