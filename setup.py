@@ -8,7 +8,7 @@ setuptools.setup(
     version="0.0.1",
     author="Stuart Golodetz",
     author_email="stuart.golodetz@cs.ox.ac.uk",
-    description="Interface to OpenPose",
+    description="Human pose estimation using OpenPose",
     long_description="",  #long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/sgolodetz/smg-pyopenpose",
