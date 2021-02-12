@@ -44,7 +44,7 @@ class BoneLengthEstimator:
         """
         # For each bone in the skeleton:
         for keypoint1, keypoint2 in skeleton.bones:
-            bone_key: Tuple[str, str] = SkeletonDetector.make_bone_key(keypoint1, keypoint2)
+            bone_key: Tuple[str, str] = Skeleton.make_bone_key(keypoint1, keypoint2)
 
             # Calculate the length of the bone in the skeleton, as an estimate of its true length.
             bone_length_estimate: float = np.linalg.norm(keypoint1.position - keypoint2.position)

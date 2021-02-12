@@ -4,8 +4,9 @@ import numpy as np
 
 from typing import Any, Dict, List, Optional, Tuple
 
+from smg.skeletons import Skeleton
+
 from ..cpp.pyopenpose import *
-from .skeleton import Skeleton
 
 
 class SkeletonDetector:
@@ -46,18 +47,6 @@ class SkeletonDetector:
     # PUBLIC STATIC METHODS
 
     @staticmethod
-    def make_bone_key(keypoint1: Skeleton.Keypoint, keypoint2: Skeleton.Keypoint) -> Tuple[str, str]:
-        """
-        Make a key that can be used to look up a bone in a dictionary.
-
-        :param keypoint1:   The keypoint at one end of the bone.
-        :param keypoint2:   The keypoint at the other end of the bone.
-        :return:            The key for the bone.
-        """
-        # noinspection PyTypeChecker
-        return tuple(sorted([keypoint1.name, keypoint2.name]))
-
-    @staticmethod
     def remove_bad_bones(skeleton: Skeleton, expected_bone_lengths: Dict[Tuple[str, str], float], *,
                          tolerance: float = 0.3) -> Skeleton:
         """
@@ -75,7 +64,7 @@ class SkeletonDetector:
 
         # Determine the good bones and the keypoints they touch.
         for keypoint1, keypoint2 in skeleton.bones:
-            bone_key: Tuple[str, str] = SkeletonDetector.make_bone_key(keypoint1, keypoint2)
+            bone_key: Tuple[str, str] = Skeleton.make_bone_key(keypoint1, keypoint2)
             expected_bone_length: Optional[float] = expected_bone_lengths.get(bone_key)
             if expected_bone_length is not None:
                 bone_length: float = np.linalg.norm(keypoint1.position - keypoint2.position)

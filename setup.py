@@ -17,7 +17,8 @@ setuptools.setup(
     install_requires=[
         "numpy",
         "opencv-contrib-python==3.4.2.16",
-        "smg-opengl"
+        "smg-opengl",
+        "smg-skeletons"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
