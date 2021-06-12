@@ -4,7 +4,7 @@ import numpy as np
 
 from typing import Any, Dict, List, Optional, Tuple
 
-from smg.skeletons import Skeleton
+from smg.skeletons import Skeleton, Skeleton2d
 
 from ..cpp.pyopenpose import *
 
@@ -80,7 +80,7 @@ class SkeletonDetector:
 
     # PUBLIC METHODS
 
-    def detect_skeletons_2d(self, colour_image: np.ndarray) -> Tuple[List[Skeleton], np.ndarray]:
+    def detect_skeletons_2d(self, colour_image: np.ndarray) -> Tuple[List[Skeleton2d], np.ndarray]:
         """
         Detect 2D skeletons in a colour image using OpenPose.
 
@@ -96,7 +96,7 @@ class SkeletonDetector:
         # If any 2D skeletons were detected:
         if len(datum.poseKeypoints.shape) > 0:
             # Assemble them into an easier-to-use format.
-            skeletons: List[Skeleton] = []
+            skeletons: List[Skeleton2d] = []
             skeleton_count: int = datum.poseKeypoints.shape[0]
 
             for i in range(skeleton_count):
@@ -110,7 +110,7 @@ class SkeletonDetector:
                         position: np.ndarray = pose_keypoints[j][:2]
                         skeleton_keypoints[name] = Skeleton.Keypoint(name, position, score)
 
-                skeletons.append(Skeleton(skeleton_keypoints, self.__keypoint_pairs))
+                skeletons.append(Skeleton2d(skeleton_keypoints, self.__keypoint_pairs))
 
             return skeletons, datum.cvOutputData
         else:
@@ -130,7 +130,7 @@ class SkeletonDetector:
         skeletons_2d, output_image = self.detect_skeletons_2d(colour_image)
         return self.lift_skeletons_to_3d(skeletons_2d, ws_points, mask), output_image
 
-    def lift_skeleton_to_3d(self, skeleton_2d: Skeleton, ws_points: np.ndarray, mask: np.ndarray) -> Skeleton:
+    def lift_skeleton_to_3d(self, skeleton_2d: Skeleton2d, ws_points: np.ndarray, mask: np.ndarray) -> Skeleton:
         """
         Lift a 2D skeleton to 3D by back-projecting its keypoints into world space.
 
@@ -156,7 +156,7 @@ class SkeletonDetector:
         # Make a 3D skeleton from the list of 3D keypoints, and return it.
         return Skeleton(keypoints_3d, self.__keypoint_pairs)
 
-    def lift_skeletons_to_3d(self, skeletons_2d: List[Skeleton], ws_points: np.ndarray,
+    def lift_skeletons_to_3d(self, skeletons_2d: List[Skeleton2d], ws_points: np.ndarray,
                              mask: np.ndarray) -> List[Skeleton]:
         """
         Lift a set of 2D skeletons to 3D by back-projecting their keypoints into world space.
