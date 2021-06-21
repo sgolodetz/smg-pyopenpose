@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import numpy as np
-
 from typing import Any, Dict, List, Optional, Tuple
 
-from smg.skeletons import Skeleton2D, Skeleton3D
+from smg.skeletons import Keypoint, Skeleton2D, Skeleton3D
 
 from ..cpp.pyopenpose import *
 
@@ -59,7 +57,7 @@ class SkeletonDetector:
                                         from its expected length without the bone being removed.
         :return:                        A copy of the skeleton from which the bad bones have been removed.
         """
-        good_keypoints: Dict[str, Skeleton3D.Keypoint] = {}
+        good_keypoints: Dict[str, Keypoint] = {}
         good_keypoint_pairs: List[Tuple[str, str]] = []
 
         # Determine the good bones and the keypoints they touch.
@@ -102,13 +100,13 @@ class SkeletonDetector:
             for i in range(skeleton_count):
                 pose_keypoints: np.ndarray = datum.poseKeypoints[i, :, :]
                 pose_keypoint_count: int = pose_keypoints.shape[0]
-                skeleton_keypoints: Dict[str, Skeleton3D.Keypoint] = {}
+                skeleton_keypoints: Dict[str, Keypoint] = {}
                 for j in range(pose_keypoint_count):
                     score: float = pose_keypoints[j][2]
                     if score > 0.0:
                         name: str = self.__keypoint_names[j]
                         position: np.ndarray = pose_keypoints[j][:2]
-                        skeleton_keypoints[name] = Skeleton3D.Keypoint(name, position, score)
+                        skeleton_keypoints[name] = Keypoint(name, position, score)
 
                 skeletons.append(Skeleton2D(skeleton_keypoints, self.__keypoint_pairs))
 
@@ -139,7 +137,7 @@ class SkeletonDetector:
         :param mask:            A binary mask indicating which pixels have a valid world-space point.
         :return:                The 3D skeleton.
         """
-        keypoints_3d: Dict[str, Skeleton3D.Keypoint] = {}
+        keypoints_3d: Dict[str, Keypoint] = {}
         height, width = ws_points.shape[:2]
 
         # For each keypoint in the 2D skeleton:
@@ -151,7 +149,7 @@ class SkeletonDetector:
             # noinspection PyChainedComparisons
             if 0 <= x < width and 0 <= y < height and mask[y, x] != 0:
                 # Make the corresponding 3D keypoint and add it to the list.
-                keypoints_3d[keypoint_name] = Skeleton3D.Keypoint(keypoint_name, ws_points[y, x], keypoint_2d.score)
+                keypoints_3d[keypoint_name] = Keypoint(keypoint_name, ws_points[y, x], keypoint_2d.score)
 
         # Make a 3D skeleton from the list of 3D keypoints, and return it.
         return Skeleton3D(keypoints_3d, self.__keypoint_pairs)
