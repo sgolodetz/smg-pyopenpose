@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import numpy as np
-
 from typing import Any, Dict, List, Optional, Tuple
 
-from smg.skeletons import Skeleton
+from smg.skeletons import Keypoint, Skeleton2D, Skeleton3D
 
 from ..cpp.pyopenpose import *
 
@@ -47,8 +45,8 @@ class SkeletonDetector:
     # PUBLIC STATIC METHODS
 
     @staticmethod
-    def remove_bad_bones(skeleton: Skeleton, expected_bone_lengths: Dict[Tuple[str, str], float], *,
-                         tolerance: float = 0.3) -> Skeleton:
+    def remove_bad_bones(skeleton: Skeleton3D, expected_bone_lengths: Dict[Tuple[str, str], float], *,
+                         tolerance: float = 0.3) -> Skeleton3D:
         """
         Remove from the specified skeleton any bone whose estimated length is different from its expected length
         by more than the specified tolerance (in m).
@@ -59,12 +57,12 @@ class SkeletonDetector:
                                         from its expected length without the bone being removed.
         :return:                        A copy of the skeleton from which the bad bones have been removed.
         """
-        good_keypoints: Dict[str, Skeleton.Keypoint] = {}
+        good_keypoints: Dict[str, Keypoint] = {}
         good_keypoint_pairs: List[Tuple[str, str]] = []
 
         # Determine the good bones and the keypoints they touch.
         for keypoint1, keypoint2 in skeleton.bones:
-            bone_key: Tuple[str, str] = Skeleton.make_bone_key(keypoint1, keypoint2)
+            bone_key: Tuple[str, str] = Skeleton3D.make_bone_key(keypoint1, keypoint2)
             expected_bone_length: Optional[float] = expected_bone_lengths.get(bone_key)
             if expected_bone_length is not None:
                 bone_length: float = np.linalg.norm(keypoint1.position - keypoint2.position)
@@ -76,11 +74,11 @@ class SkeletonDetector:
                         good_keypoints[keypoint2.name] = keypoint2
 
         # Return a filtered skeleton.
-        return Skeleton(good_keypoints, good_keypoint_pairs)
+        return Skeleton3D(good_keypoints, good_keypoint_pairs)
 
     # PUBLIC METHODS
 
-    def detect_skeletons_2d(self, colour_image: np.ndarray) -> Tuple[List[Skeleton], np.ndarray]:
+    def detect_skeletons_2d(self, colour_image: np.ndarray) -> Tuple[List[Skeleton2D], np.ndarray]:
         """
         Detect 2D skeletons in a colour image using OpenPose.
 
@@ -96,28 +94,28 @@ class SkeletonDetector:
         # If any 2D skeletons were detected:
         if len(datum.poseKeypoints.shape) > 0:
             # Assemble them into an easier-to-use format.
-            skeletons: List[Skeleton] = []
+            skeletons: List[Skeleton2D] = []
             skeleton_count: int = datum.poseKeypoints.shape[0]
 
             for i in range(skeleton_count):
                 pose_keypoints: np.ndarray = datum.poseKeypoints[i, :, :]
                 pose_keypoint_count: int = pose_keypoints.shape[0]
-                skeleton_keypoints: Dict[str, Skeleton.Keypoint] = {}
+                skeleton_keypoints: Dict[str, Keypoint] = {}
                 for j in range(pose_keypoint_count):
                     score: float = pose_keypoints[j][2]
                     if score > 0.0:
                         name: str = self.__keypoint_names[j]
                         position: np.ndarray = pose_keypoints[j][:2]
-                        skeleton_keypoints[name] = Skeleton.Keypoint(name, position, score)
+                        skeleton_keypoints[name] = Keypoint(name, position, score)
 
-                skeletons.append(Skeleton(skeleton_keypoints, self.__keypoint_pairs))
+                skeletons.append(Skeleton2D(skeleton_keypoints, self.__keypoint_pairs))
 
             return skeletons, datum.cvOutputData
         else:
             return [], colour_image
 
     def detect_skeletons_3d(self, colour_image: np.ndarray, ws_points: np.ndarray,
-                            mask: np.ndarray) -> Tuple[List[Skeleton], np.ndarray]:
+                            mask: np.ndarray) -> Tuple[List[Skeleton3D], np.ndarray]:
         """
         Detect 3D skeletons in an RGB-D image using OpenPose.
 
@@ -130,7 +128,7 @@ class SkeletonDetector:
         skeletons_2d, output_image = self.detect_skeletons_2d(colour_image)
         return self.lift_skeletons_to_3d(skeletons_2d, ws_points, mask), output_image
 
-    def lift_skeleton_to_3d(self, skeleton_2d: Skeleton, ws_points: np.ndarray, mask: np.ndarray) -> Skeleton:
+    def lift_skeleton_to_3d(self, skeleton_2d: Skeleton2D, ws_points: np.ndarray, mask: np.ndarray) -> Skeleton3D:
         """
         Lift a 2D skeleton to 3D by back-projecting its keypoints into world space.
 
@@ -139,7 +137,7 @@ class SkeletonDetector:
         :param mask:            A binary mask indicating which pixels have a valid world-space point.
         :return:                The 3D skeleton.
         """
-        keypoints_3d: Dict[str, Skeleton.Keypoint] = {}
+        keypoints_3d: Dict[str, Keypoint] = {}
         height, width = ws_points.shape[:2]
 
         # For each keypoint in the 2D skeleton:
@@ -151,13 +149,13 @@ class SkeletonDetector:
             # noinspection PyChainedComparisons
             if 0 <= x < width and 0 <= y < height and mask[y, x] != 0:
                 # Make the corresponding 3D keypoint and add it to the list.
-                keypoints_3d[keypoint_name] = Skeleton.Keypoint(keypoint_name, ws_points[y, x], keypoint_2d.score)
+                keypoints_3d[keypoint_name] = Keypoint(keypoint_name, ws_points[y, x], keypoint_2d.score)
 
         # Make a 3D skeleton from the list of 3D keypoints, and return it.
-        return Skeleton(keypoints_3d, self.__keypoint_pairs)
+        return Skeleton3D(keypoints_3d, self.__keypoint_pairs)
 
-    def lift_skeletons_to_3d(self, skeletons_2d: List[Skeleton], ws_points: np.ndarray,
-                             mask: np.ndarray) -> List[Skeleton]:
+    def lift_skeletons_to_3d(self, skeletons_2d: List[Skeleton2D], ws_points: np.ndarray,
+                             mask: np.ndarray) -> List[Skeleton3D]:
         """
         Lift a set of 2D skeletons to 3D by back-projecting their keypoints into world space.
 

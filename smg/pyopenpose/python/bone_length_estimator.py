@@ -3,7 +3,7 @@ import numpy as np
 from collections import deque
 from typing import Deque, Dict, Optional, Tuple
 
-from .skeleton_detector import Skeleton, SkeletonDetector
+from .skeleton_detector import Skeleton3D, SkeletonDetector
 
 
 class BoneLengthEstimator:
@@ -30,7 +30,7 @@ class BoneLengthEstimator:
 
     # PUBLIC METHODS
 
-    def add_estimates(self, skeleton: Skeleton) -> None:
+    def add_estimates(self, skeleton: Skeleton3D) -> None:
         """
         Add bone length estimates based on the specified skeleton.
 
@@ -44,7 +44,7 @@ class BoneLengthEstimator:
         """
         # For each bone in the skeleton:
         for keypoint1, keypoint2 in skeleton.bones:
-            bone_key: Tuple[str, str] = Skeleton.make_bone_key(keypoint1, keypoint2)
+            bone_key: Tuple[str, str] = Skeleton3D.make_bone_key(keypoint1, keypoint2)
 
             # Calculate the length of the bone in the skeleton, as an estimate of its true length.
             bone_length_estimate: float = np.linalg.norm(keypoint1.position - keypoint2.position)
